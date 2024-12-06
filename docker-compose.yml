@@ -128,7 +128,39 @@ services:
       - 61613:61613
     networks:
       - backend
-    
+  front:
+    image: nginx:1.27.3-alpine
+    container_name: front
+    restart: always
+    healthcheck:
+      test: [ "CMD", "curl", "-f", "http://localhost" ]
+      interval: 10s
+      timeout: 10s
+      retries: 10
+    depends_on:
+      - restapi
+      - wsapi
+    volumes:
+      - ./vendorConfigurations/nginx.conf:/etc/nginx/nginx.conf:ro
+      - front_build:/usr/share/nginx/html
+    ports:
+      - 80:80
+  webapp:
+    container_name: webapp
+    working_dir: /app
+    volumes:
+      - ./app:/app 
+      - front_build:/app/build 
+    # environment:
+    #   - __PUBLIC_PATH__=/
+    #   - __API_BASE_URL__=http://localhost:5001
+    #   - __RT_API_BASE_URL__=http://localhost:8080
+    command: npm run build
+    networks:
+      - frontend
+    profiles:
+      - build
+
 volumes:
   mariadb_data:
   nosqldatabase_data:
@@ -136,7 +168,10 @@ volumes:
   broker_data:
   maven_cache:
   source_code:
+  front_build:
 
 networks:
   backend:
+    driver: bridge
+  frontend:
     driver: bridge
