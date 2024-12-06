@@ -1,0 +1,142 @@
+services:
+  sqldatabase:
+    image: mariadb:11.3
+    restart: always
+    container_name: sqldatabase
+    environment:
+      - MARIADB_ROOT_PASSWORD=${MARIADB_ROOT_PASSWORD}
+      - MARIADB_DATABASE=${MARIADB_DATABASE}
+      - MARIADB_USER=${MARIADB_USER}
+      - MARIADB_PASSWORD=${MARIADB_PASSWORD}
+    healthcheck:
+      test: [ "CMD-SHELL", "mariadb-admin ping -h localhost -u ${MARIADB_USER} --password=${MARIADB_PASSWORD} || exit 1" ]
+      interval: 10s
+      timeout: 10s
+      retries: 10
+    volumes:
+      - mariadb_data:/var/lib/mysql
+      - ./init.sql:/docker-entrypoint-initdb.d/init.sql:ro
+    ports:
+      - 3306:3306
+    networks:
+      - backend
+  phpmyadmin:
+    image: phpmyadmin
+    container_name: phpmyadmin
+    environment:
+      PMA_HOST: sqldatabase
+      PMA_USER: ${MARIADB_USER}
+      PMA_PASSWORD: ${MARIADB_PASSWORD}
+    depends_on:
+      sqldatabase:
+        condition: service_healthy
+    ports:
+      - 8082:80
+    profiles:
+      - dev-tools
+    networks:
+      - backend
+  nosqldatabase:
+    image: mongo:4.4
+    container_name: nosqldatabase
+    restart: always
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: ${MONGO_INITDB_ROOT_USERNAME}
+      MONGO_INITDB_ROOT_PASSWORD: ${MONGO_INITDB_ROOT_PASSWORD}
+    healthcheck:
+      test: [ "CMD-SHELL", "echo 'db.runCommand(\"ping\").ok' | mongo localhost:27017/test --quiet" ]
+      interval: 10s
+      timeout: 10s
+      retries: 10
+    volumes:
+      - nosqldatabase_data:/data/db
+      - nosqldatabase_configdb:/data/configdb
+    ports:
+      - 27017:27017
+    networks:
+      - backend
+  mongo-express:
+    image: mongo-express:0.54
+    container_name: mongo-express
+    environment:
+      ME_CONFIG_MONGODB_SERVER: nosqldatabase
+      ME_CONFIG_MONGODB_ADMINUSERNAME: ${MONGO_INITDB_ROOT_USERNAME}
+      ME_CONFIG_MONGODB_ADMINPASSWORD: ${MONGO_INITDB_ROOT_PASSWORD}
+      ME_CONFIG_BASICAUTH_USERNAME: ${ME_CONFIG_BASICAUTH_USERNAME}
+      ME_CONFIG_BASICAUTH_PASSWORD: ${ME_CONFIG_BASICAUTH_PASSWORD}
+    depends_on:
+      nosqldatabase:
+        condition: service_healthy
+    ports:
+      - 8081:8081
+    profiles:
+      - dev-tools
+    networks:
+      - backend
+  restapi:
+    container_name: restapi
+    restart: always
+    build:
+      context: /RESTApi
+    depends_on:
+      sqldatabase:
+        condition: service_healthy
+      nosqldatabase:
+        condition: service_healthy
+    ports:
+      - 5001:5001
+    networks:
+      - backend
+  wsapi:
+    image: maven:3.9.9-amazoncorretto-21
+    container_name: wsapi
+    restart: always
+    depends_on:
+      sqldatabase:
+        condition: service_healthy
+      nosqldatabase:
+        condition: service_healthy
+      broker:
+        condition: service_healthy
+    working_dir: /RealtimeAPI
+    command: mvn spring-boot:run
+    volumes:
+      - ./RealtimeAPI:/RealtimeAPI
+      - maven_cache:/root/.m2 # Cache Maven persistant
+      - source_code:/RealtimeAPI/target # Dossier target persistant
+    ports:
+      - 8080:8080
+    networks:
+      - backend
+  broker:
+    image: rabbitmq:3.12
+    container_name: broker
+    restart: always
+    environment:
+      RABBITMQ_DEFAULT_USER: ${RABBITMQ_DEFAULT_USER}
+      RABBITMQ_DEFAULT_PASS: ${RABBITMQ_DEFAULT_PASS}
+    healthcheck:
+      test: [ "CMD", "rabbitmq-diagnostics", "ping" ]
+      interval: 10s
+      timeout: 10s
+      retries: 10
+    volumes:
+      - broker_data:/var/lib/rabbitmq
+      - ./30-stomp.conf:/etc/rabbitmq/conf.d/30-stomp.conf
+      - ./rabbit_enabled_plugins:/etc/rabbitmq/enabled_plugins
+    ports:
+      - 61613:61613
+    networks:
+      - backend
+    
+volumes:
+  mariadb_data:
+  nosqldatabase_data:
+  nosqldatabase_configdb:
+  broker_data:
+  maven_cache:
+  source_code:
+
+networks:
+  backend:
+    driver: bridge

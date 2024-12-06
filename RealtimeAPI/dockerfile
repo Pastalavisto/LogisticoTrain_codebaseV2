@@ -1,0 +1,5 @@
+FROM rabbitmq:3.12
+
+RUN rabbitmq-plugins enable rabbitmq_stomp
+
+COPY ./30-stomp.conf /etc/rabbitmq/conf.d/30-stomp.conf
