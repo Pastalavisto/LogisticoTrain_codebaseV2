@@ -7,8 +7,8 @@ const packageInfo = require('./package.json'); // info générale de l'app
 const babelConfig = require('./babel.config'); // Info de config de babel
 
 const PUBLIC_PATH = '/'; // url de base de l'appli
-const API_BASE_URL = 'http://127.0.0.1:5001/api/v1';
-const RT_API_BASE_URL = 'http://127.0.0.1:8080/api';
+const API_BASE_URL = '/api/v1';
+const RT_API_BASE_URL = '/wsapi';
 
 module.exports = {
   mode: 'development',

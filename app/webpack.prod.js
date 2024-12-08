@@ -11,8 +11,8 @@ const packageInfo = require('./package.json'); // info générale de l'app
 const babelConfig = require('./babel.config'); // Info de config de babel
 
 const PUBLIC_PATH = process.env.PUBLIC_PATH ?? '/'; // url de base de l'appli
-const API_BASE_URL = process.env.API_EP_URI ?? 'http://localhost/api/v1';
-const RT_API_BASE_URL = process.env.RT_API_EP_URI ?? 'http://localhost/wsapi';
+const API_BASE_URL = process.env.API_EP_URI ?? '/api/v1';
+const RT_API_BASE_URL = process.env.RT_API_EP_URI ?? '/wsapi';
 
 module.exports = {
   mode: 'production',

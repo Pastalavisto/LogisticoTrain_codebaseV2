@@ -133,7 +133,7 @@ services:
     volumes:
       - broker_data:/var/lib/rabbitmq
       - ./30-stomp.conf:/etc/rabbitmq/conf.d/30-stomp.conf
-      - ./rabbit_enabled_plugins:/etc/rabbitmq/enabled_plugins
+      - ./enabled_plugins:/etc/rabbitmq/enabled_plugins
     ports:
       - 61613:61613
     networks:
