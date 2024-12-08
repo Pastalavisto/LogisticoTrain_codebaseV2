@@ -18,8 +18,8 @@ services:
       timeout: 10s
       retries: 10
     volumes:
-      - mariadb_data:/var/lib/mysql
-      - ./init.sql:/docker-entrypoint-initdb.d/init.sql:ro
+      - sqldatabase_data:/var/lib/mysql
+      - ./Sqldatabase/init.sql:/docker-entrypoint-initdb.d/init.sql:ro
     ports:
       - 3306:3306
     networks:
@@ -29,8 +29,6 @@ services:
     container_name: phpmyadmin
     environment:
       PMA_HOST: sqldatabase
-      PMA_USER: ${MARIADB_USER}
-      PMA_PASSWORD: ${MARIADB_PASSWORD}
     depends_on:
       sqldatabase:
         condition: service_healthy
@@ -111,13 +109,14 @@ services:
     command: mvn spring-boot:run
     volumes:
       - ./RealtimeAPI:/RealtimeAPI
-      - maven_cache:/root/.m2
-      - source_code:/RealtimeAPI/target
+      - ./MavenCache:/root/.m2
+      - ./RealtimeAPI/target:/RealtimeAPI/target
     ports:
       - 8080:8080
     networks:
       - backend
       - frontend
+      - broker
   broker:
     image: rabbitmq:3.12
     container_name: broker
@@ -132,14 +131,14 @@ services:
       retries: 10
     volumes:
       - broker_data:/var/lib/rabbitmq
-      - ./30-stomp.conf:/etc/rabbitmq/conf.d/30-stomp.conf
-      - ./enabled_plugins:/etc/rabbitmq/enabled_plugins
+      - ./Broker/30-stomp.conf:/etc/rabbitmq/conf.d/30-stomp.conf:ro
+      - ./Broker/enabled_plugins:/etc/rabbitmq/enabled_plugins:ro
     ports:
       - 61613:61613
     networks:
-      - backend
+      - broker
   front:
-    image: nginx:1.27.3-alpine
+    image: nginx:alpine
     container_name: front
     restart: always
     healthcheck:
@@ -153,10 +152,10 @@ services:
     volumes:
       - ./vendorConfigurations/nginx.conf:/etc/nginx/nginx.conf:ro
       - ./app/build:/var/www/app:ro
-    ports:
-      - 80:80
     networks:
       - frontend
+    ports:
+      - 80:80
   webapp:
     image: node:22
     container_name: webapp
@@ -166,22 +165,19 @@ services:
     command: >
       sh -c "npm i &&
              npm run build"
-    networks:
-      - frontend
     profiles:
       - build
 
 volumes:
-  mariadb_data:
+  sqldatabase_data:
   nosqldatabase_data:
   nosqldatabase_configdb:
   broker_data:
-  maven_cache:
-  source_code:
-  front_build:
 
 networks:
   backend:
     driver: bridge
   frontend:
+    driver: bridge
+  broker:
     driver: bridge

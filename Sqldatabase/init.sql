@@ -5,7 +5,7 @@ CREATE TABLE voies (
     num_voie INT(11) NOT NULL,
     interdite TINYINT(1) NOT NULL,
     PRIMARY KEY (num_voie)
-) DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+);
 
 -- Création de la table rames
 CREATE TABLE rames (
@@ -15,7 +15,7 @@ CREATE TABLE rames (
     conducteur_entrant VARCHAR(50) NOT NULL,
     PRIMARY KEY (num_serie),
     FOREIGN KEY (voie) REFERENCES voies(num_voie)
-) DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+);
 
 -- Création de la table Tache
 CREATE TABLE taches (
@@ -24,4 +24,4 @@ CREATE TABLE taches (
     tache TEXT NOT NULL,
     PRIMARY KEY (num_serie, num_tache),
     FOREIGN KEY (num_serie) REFERENCES rames(num_serie)
-) DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+);
